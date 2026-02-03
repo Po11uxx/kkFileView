@@ -91,6 +91,7 @@
          LuckyExcel.transformExcelToLuckyByUrl(value, name, function(exportJson, luckysheetfile){
             if(exportJson.sheets==null || exportJson.sheets.length==0){
                 alert("读取excel文件内容失败!");
+                alert("File is corrupted or unrecognizable!");
                 return;
             }
             mask.style.display = "none";
