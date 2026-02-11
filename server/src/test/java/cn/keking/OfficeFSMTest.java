@@ -140,18 +140,17 @@ public class OfficeFSMTest {
     public void testCompressedFile_SkipDownload() {
         String zipFileName = "Sample.zip";
 
-        // 1. Trigger Request for ZIP File
+        // Trigger Request for ZIP File
         String fileUrl = BASE_TEST_URL + zipFileName;
         String encodedUrl = encodeUrl(fileUrl);
         ResponseEntity<String> response = restTemplate.getForEntity(PREVIEW_API + encodedUrl, String.class);
 
-        // 2. Log Response
+        // Log Response
         System.out.println("=== zip response ===");
         System.out.println(response.getBody());
         System.out.println("=== response end ===");
 
-        // 3. Assertions (matches DownloadUtils.isCompressFile logic)
-//        assertFalse(isFileExist(zipFileName), "Compressed file should NOT be downloaded");
+        // Assertions (matches DownloadUtils.isCompressFile logic)
         assertTrue(response.getBody().contains("zTreeDemoBackground"), "ZIP file should be rejected");
     }
 
