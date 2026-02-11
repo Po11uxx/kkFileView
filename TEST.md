@@ -1,4 +1,7 @@
 # Testing Report for kkFileView
+#### Group 5 kkFileView
+Member Name: Xinyi Xu </br>
+Github Link: https://github.com/Po11uxx/kkFileView
 
 ## 1. Introduction
 ### 1.1 Project Overview
@@ -88,7 +91,7 @@ Since I'm the whole team myself, the following tests were implemented on my own.
   * P1-3: Sample.txt (intact, 4KB, plain text) – Representative of invalid Office/WPS formats.
   * P1-4: Sample.xlsx (truncated, 8KB, incomplete XLSX structure) – Representative of corrupted valid formats.
 ##### JUnit Test Cases
-Test cases were added to server/src/test/java/cn/keking/OfficePreviewTests.java . The tests use Spring Boot’s @SpringBootTest to load the application context and validate preview responses.
+Test cases were added to [server/src/test/java/cn/keking/OfficePreviewTests.java](https://github.com/Po11uxx/kkFileView/blob/9b567f9bf2b5e5fab92e64ecdb69a00cd21f71d1/server/src/test/java/cn/keking/OfficePreviewTests.java#L12) . The tests use Spring Boot’s @SpringBootTest to load the application context and validate preview responses.
 **Test Execution**: Tests are run via Maven
 ```bash
 mvn test -Dtest=OfficePreviewTests
@@ -109,7 +112,7 @@ The testing approach focuses on server-side responsibilities like format validat
 |P2-3	|Small image (≤1MB, ≤1920x1080)	|Valid| 	Typical web-friendly size; baseline for performance testing.                 |
 |P2-4	|Large image (≥10MB, ≥4000x3000)	|Valid| 	Boundary case for server delivery speed and front-end rendering performance. |
 ##### JUnit Test Cases
-Test cases were added to server/src/test/java/cn/keking/ImagePreviewTests.java . The tests use Spring Boot’s @SpringBootTest to load the application context and validate preview responses.
+Test cases were added to [server/src/test/java/cn/keking/ImagePreviewTests.java](https://github.com/Po11uxx/kkFileView/blob/9b567f9bf2b5e5fab92e64ecdb69a00cd21f71d1/server/src/test/java/cn/keking/ImagePreviewTests.java#L11) . The tests use Spring Boot’s @SpringBootTest to load the application context and validate preview responses.
 **Test Execution**: Tests are run via Maven
 ```bash
 mvn test -Dtest=ImagePreviewTests

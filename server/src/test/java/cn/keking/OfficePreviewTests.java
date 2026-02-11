@@ -75,7 +75,7 @@ public class OfficePreviewTests {
     @Test
     public void testCorruptedOfficeFile_PreviewError() {
         // Test P1-4: Corrupted XLSX file
-        String fileUrl = BASE_TEST_URL + "Sample.xlsx";
+        String fileUrl = BASE_TEST_URL + "corruptedSample.xlsx";
         String encodedUrl = encodeUrl(fileUrl);
         ResponseEntity<String> response = restTemplate.getForEntity(PREVIEW_API + encodedUrl, String.class);
 
