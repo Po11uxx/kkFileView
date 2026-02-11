@@ -22,7 +22,7 @@ public class OfficeFSMTest {
     private static final String PREVIEW_API = "/onlinePreview?url=";
     private static final String BASE_TEST_URL = "http://localhost:8012/";
 
-    private static final String FILE_DIR = "/Users/mac/Desktop/studyeeeee/Master/Winter1/SWE261P/kkFileView/server/src/main/resources/static/test-files/";
+    private static final String FILE_DIR = "./server/src/main/resources/static/test-files/";
 
     // -------------------------------------------------------------------------
     // Helpers
