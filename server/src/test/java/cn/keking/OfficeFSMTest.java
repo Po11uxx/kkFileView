@@ -45,17 +45,6 @@ public class OfficeFSMTest {
         return new File(getRealFilePath(fileName)).exists();
     }
 
-    // Clean up test files
-    private void cleanUpTestFiles(String... fileNames) {
-        for (String fileName : fileNames) {
-            File file = new File(getRealFilePath(fileName));
-            if (file.exists()) {
-                boolean deleted = file.delete();
-                if (!deleted) logger.warn("Failed to delete test file: {}", fileName);
-            }
-        }
-    }
-
     // Verify DownloadUtils error handling
     private boolean isDownloadFailedResponse(String responseBody) {
         return responseBody.contains("下载失败") || responseBody.contains("文件不存在") || responseBody.contains("文件名不合法");
