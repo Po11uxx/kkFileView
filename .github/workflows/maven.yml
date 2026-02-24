@@ -1,52 +1,119 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
-name: Java CI with Maven
+## This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+## For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+#
+#name: Java CI with Maven
+#
+#on:
+#  push:
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
+#
+#jobs:
+#  build:
+#    runs-on: ubuntu-22.04
+#
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v4
+#
+#    - name: Set up JDK 21
+#      uses: actions/setup-java@v4
+#      with:
+#        java-version: '21'
+#        distribution: 'temurin'  # 使用 Eclipse Temurin (AdoptOpenJDK 的继任者)
+#        cache: 'maven'
+#
+#    - name: Cache Maven packages
+#      uses: actions/cache@v4
+#      with:
+#        path: ~/.m2/repository
+#        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+#        restore-keys: |
+#          ${{ runner.os }}-maven-
+#
+#    - name: Build with Maven
+#      run: mvn -B package -Dmaven.test.skip=true --file pom.xml
+#
+#    - name: Upload Linux distribution package
+#      if: success()
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: kkfileview-linux
+#        path: server/target/*.tar.gz
+#        retention-days: 7
+#
+#    - name: Upload Windows distribution package
+#      if: success()
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: kkfileview-windows
+#        path: server/target/*.zip
+#        retention-days: 7
+name: kkFileView Continuous Integration
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'  # 使用 Eclipse Temurin (AdoptOpenJDK 的继任者)
-        cache: 'maven'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
+      - name: Run stable automated test suite
+        run: >
+          mvn -B -pl server
+          -Dtest=cn.keking.utils.WebUtilsTests,cn.keking.utils.WebUtilsStructuralTests,cn.keking.utils.KkFileUtilsStructuralTests,cn.keking.utils.UrlEncoderUtilsStructuralTests
+          test
 
-    - name: Build with Maven
-      run: mvn -B package -Dmaven.test.skip=true --file pom.xml
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: server/target/surefire-reports/*
+          if-no-files-found: ignore
+          retention-days: 7
 
-    - name: Upload Linux distribution package
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: kkfileview-linux
-        path: server/target/*.tar.gz
-        retention-days: 7
+  build:
+    runs-on: ubuntu-22.04
+    needs: test
 
-    - name: Upload Windows distribution package
-      if: success()
-      uses: actions/upload-artifact@v4
-      with:
-        name: kkfileview-windows
-        path: server/target/*.zip
-        retention-days: 7
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build package with Maven
+        run: mvn -B -pl server -DskipTests package
+
+      - name: Upload packaged artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kkfileview-package
+          path: |
+            server/target/*.jar
+            server/target/*.zip
+            server/target/*.tar.gz
+          if-no-files-found: ignore
+          retention-days: 7
