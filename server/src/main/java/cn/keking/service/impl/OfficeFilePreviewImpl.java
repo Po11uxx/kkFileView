@@ -44,17 +44,17 @@ public class OfficeFilePreviewImpl implements FilePreview {
 
     @Override
     public String filePreviewHandle(String url, Model model, FileAttribute fileAttribute) {
-        // 预览Type，参数传了就取参数的，没传取系统默认
+        // Use request-level preview type when provided; otherwise fall back to global default.
         String officePreviewType = fileAttribute.getOfficePreviewType();
         boolean userToken = fileAttribute.getUsePasswordCache();
         String baseUrl = BaseUrlFilter.getBaseUrl();
-        String suffix = fileAttribute.getSuffix();  //获取文件后缀
-        String fileName = fileAttribute.getName(); //获取文件原始名称
-        String filePassword = fileAttribute.getFilePassword(); //获取密码
-        boolean forceUpdatedCache=fileAttribute.forceUpdatedCache();  //是否启用强制更新命令
-        boolean isHtmlView = fileAttribute.isHtmlView();  //xlsx  转换成html
-        String cacheName = fileAttribute.getCacheName();  //转换后的文件名
-        String outFilePath = fileAttribute.getOutFilePath();  //转换后生成文件的路径
+        String suffix = fileAttribute.getSuffix();  // file extension
+        String fileName = fileAttribute.getName(); // original file name
+        String filePassword = fileAttribute.getFilePassword(); // optional password for encrypted office files
+        boolean forceUpdatedCache=fileAttribute.forceUpdatedCache();  // bypass conversion cache
+        boolean isHtmlView = fileAttribute.isHtmlView();  // render xlsx as html when enabled
+        String cacheName = fileAttribute.getCacheName();  // converted file cache key
+        String outFilePath = fileAttribute.getOutFilePath();  // converted output path
         if (!officePreviewType.equalsIgnoreCase("html")) {
             if (ConfigConstants.getOfficeTypeWeb() .equalsIgnoreCase("web")) {
                 if (suffix.equalsIgnoreCase("xlsx")) {
@@ -68,15 +68,15 @@ public class OfficeFilePreviewImpl implements FilePreview {
             }
         }
         if (forceUpdatedCache|| !fileHandlerService.listConvertedFiles().containsKey(cacheName) || !ConfigConstants.isCacheEnabled()) {
-        // 下载远程文件到本地，如果文件在本地已存在不会重复下载
+        // Download source file once and reuse local copy when available.
         ReturnResponse<String> response = DownloadUtils.downLoad(fileAttribute, fileName);
         if (response.isFailure()) {
             return otherFilePreview.notSupportedFile(model, fileAttribute, response.getMsg());
         }
             String filePath = response.getContent();
-            boolean  isPwdProtectedOffice =  OfficeUtils.isPwdProtected(filePath);    // 判断是否加密文件
+            boolean  isPwdProtectedOffice =  OfficeUtils.isPwdProtected(filePath);    // detect encryption upfront
             if (isPwdProtectedOffice && !StringUtils.hasLength(filePassword)) {
-                // 加密文件需要密码
+                // Ask user for password before attempting conversion.
                 model.addAttribute("needFilePassword", true);
                 return EXEL_FILE_PREVIEW_PAGE;
             } else {
@@ -85,7 +85,7 @@ public class OfficeFilePreviewImpl implements FilePreview {
                         officeToPdfService.openOfficeToPDF(filePath, outFilePath, fileAttribute);
                     } catch (OfficeException e) {
                         if (isPwdProtectedOffice && !OfficeUtils.isCompatible(filePath, filePassword)) {
-                            // 加密文件密码错误，提示重新输入
+                            // Password provided but incompatible; prompt re-entry.
                             model.addAttribute("needFilePassword", true);
                             model.addAttribute("filePasswordError", true);
                             return EXEL_FILE_PREVIEW_PAGE;
@@ -93,15 +93,15 @@ public class OfficeFilePreviewImpl implements FilePreview {
                         return otherFilePreview.notSupportedFile(model, fileAttribute, "抱歉，该文件版本不兼容，文件版本错误。");
                     }
                     if (isHtmlView) {
-                        // 对转换后的文件进行操作(改变编码方式)
+                        // Normalize encoding after conversion for HTML rendering.
                         fileHandlerService.doActionConvertedFile(outFilePath);
                     }
                     //是否保留OFFICE源文件
-                    if (!fileAttribute.isCompressFile() && ConfigConstants.getDeleteSourceFile()) {
-                        KkFileUtils.deleteFileByPath(filePath);
-                    }
+//                    if (!fileAttribute.isCompressFile() && ConfigConstants.getDeleteSourceFile()) {
+//                        KkFileUtils.deleteFileByPath(filePath);
+//                    }
                     if (userToken || !isPwdProtectedOffice) {
-                        // 加入缓存
+                        // Cache the converted target so follow-up previews skip conversion.
                         fileHandlerService.addConvertedFile(cacheName, fileHandlerService.getRelativePath(outFilePath));
                     }
                 }
@@ -109,6 +109,7 @@ public class OfficeFilePreviewImpl implements FilePreview {
 
         }
         if (!isHtmlView && baseUrl != null && (OFFICE_PREVIEW_TYPE_IMAGE.equals(officePreviewType) || OFFICE_PREVIEW_TYPE_ALL_IMAGES.equals(officePreviewType))) {
+            // Convert generated PDF to images when image-style office preview is requested.
             return getPreviewType(model, fileAttribute, officePreviewType, cacheName, outFilePath, fileHandlerService, OFFICE_PREVIEW_TYPE_IMAGE, otherFilePreview);
         }
         model.addAttribute("pdfUrl", WebUtils.encodeFileName(cacheName));  //输出转义文件名 方便url识别
@@ -120,6 +121,7 @@ public class OfficeFilePreviewImpl implements FilePreview {
         boolean isPPT = suffix.equalsIgnoreCase("ppt") || suffix.equalsIgnoreCase("pptx");
         List<String> imageUrls = null;
         try {
+            // Reuse PDF output path as both source and target folder for generated preview images.
             imageUrls =  fileHandlerService.pdf2jpg(outFilePath,outFilePath, pdfName, fileAttribute);
         } catch (Exception e) {
             Throwable[] throwableArray = ExceptionUtils.getThrowables(e);
