@@ -53,30 +53,67 @@ public class FileConvertQueueTask {
 
         @Override
         public void run() {
+            // Original implementation kept for traceability:
+            // while (true) {
+            //     String url = null;
+            //     try {
+            //         url = cacheService.takeQueueTask();
+            //         if (url != null) {
+            //             FileAttribute fileAttribute = fileHandlerService.getFileAttribute(url, null);
+            //             FileType fileType = fileAttribute.getType();
+            //             logger.info("正在处理预览转换任务，url：{}，预览类型：{}", url, fileType);
+            //             if (isNeedConvert(fileType)) {
+            //                 FilePreview filePreview = previewFactory.get(fileAttribute);
+            //                 filePreview.filePreviewHandle(url, new ExtendedModelMap(), fileAttribute);
+            //             } else {
+            //                 logger.info("预览类型无需处理，url：{}，预览类型：{}", url, fileType);
+            //             }
+            //         }
+            //     } catch (Exception e) {
+            //         try {
+            //             TimeUnit.SECONDS.sleep(10);
+            //         } catch (Exception ex) {
+            //             Thread.currentThread().interrupt();
+            //             logger.error("Failed to sleep after exception", ex);
+            //         }
+            //         logger.info("处理预览转换任务异常，url：{}", url, e);
+            //     }
+            // }
             while (true) {
-                String url = null;
-                try {
-                    url = cacheService.takeQueueTask();
-                    if (url != null) {
-                        FileAttribute fileAttribute = fileHandlerService.getFileAttribute(url, null);
-                        FileType fileType = fileAttribute.getType();
-                        logger.info("正在处理预览转换任务，url：{}，预览类型：{}", url, fileType);
-                        if (isNeedConvert(fileType)) {
-                            FilePreview filePreview = previewFactory.get(fileAttribute);
-                            filePreview.filePreviewHandle(url, new ExtendedModelMap(), fileAttribute);
-                        } else {
-                            logger.info("预览类型无需处理，url：{}，预览类型：{}", url, fileType);
-                        }
+                // Keep the production worker loop, while the actual unit of work is testable via runOnce().
+                runOnce();
+            }
+        }
+
+        void runOnce() {
+            // Execute exactly one queue item so tests can validate behavior deterministically.
+            String url = null;
+            try {
+                url = cacheService.takeQueueTask();
+                if (url != null) {
+                    FileAttribute fileAttribute = fileHandlerService.getFileAttribute(url, null);
+                    FileType fileType = fileAttribute.getType();
+                    logger.info("正在处理预览转换任务，url：{}，预览类型：{}", url, fileType);
+                    if (isNeedConvert(fileType)) {
+                        FilePreview filePreview = previewFactory.get(fileAttribute);
+                        filePreview.filePreviewHandle(url, new ExtendedModelMap(), fileAttribute);
+                    } else {
+                        logger.info("预览类型无需处理，url：{}，预览类型：{}", url, fileType);
                     }
-                } catch (Exception e) {
-                    try {
-                        TimeUnit.SECONDS.sleep(10);
-                    } catch (Exception ex) {
-                        Thread.currentThread().interrupt();
-                        logger.error("Failed to sleep after exception", ex);
-                    }
-                    logger.info("处理预览转换任务异常，url：{}", url, e);
                 }
+            } catch (Exception e) {
+                sleepOnFailure();
+                logger.info("处理预览转换任务异常，url：{}", url, e);
+            }
+        }
+
+        protected void sleepOnFailure() {
+            // Isolated hook to avoid real waiting in tests by overriding this method.
+            try {
+                TimeUnit.SECONDS.sleep(10);
+            } catch (Exception ex) {
+                Thread.currentThread().interrupt();
+                logger.error("Failed to sleep after exception", ex);
             }
         }
 
